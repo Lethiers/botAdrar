@@ -49,7 +49,7 @@ client.on("message", message =>{
     // obtenir le nom des victimes
     if (message.content === prefix+"guilty") {
         for (let i = 0; i < tableau.length; i++) {
-            message.reply(`La personne suivante ${tableau[i][0]} c'est fait avoir le ${tableau[i][1]}`); 
+            message.reply(`La personne suivante ${tableau[i][0]} s'est faite avoir le ${tableau[i][1]}`); 
         }              
     }
 });
