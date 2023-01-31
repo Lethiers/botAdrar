@@ -28,8 +28,6 @@ client.on('ready',()=>{
 // Afficher une erreur
 client.on('error',console.error);
 
-    // on enregistre le coupable
-    // tableau = [];
 
 client.on("messageCreate", message =>{
     // je ne souhaite pas que le bot se réponde
@@ -48,6 +46,8 @@ client.on("messageCreate", message =>{
         ['!read', 'permet de lire l\'ensemble du fichier texte'],
         ['!random', 'permet de retourner un élément du fichier texte de manière aléatoire'],
         ['!meteo', 'permet de retourner la météo en spécifiant un lieu'],
+        ['!rappel', 'permet de sauvegarder une date et un préfix le but étant de mettre en place un décompte avant l\'événement']
+        ['!allRappel', 'pour voir toutes les rappels enregistrés']
 ];
     let tableau = "";
     arrayHelp.forEach(row => {
@@ -68,11 +68,11 @@ client.on("messageCreate", message =>{
 
         let chocolatine = (`la perosnne suivante : ${user} c'est faite chocoBlaster le ${moment().format('Do MMMM YYYY, HH:mm:ss')}`);
 
-        let path = '/choco.txt';
+        let path = './choco.txt';
 
 
         if (fs.existsSync(path)) {            
-            fs.appendFile("choco.txt",chocolatine + "\n",(err)=>{
+            fs.appendFile(path,chocolatine + "\n",(err)=>{
                 if (err) {
                     message.channel.send("un problème est survenu lors de l'enregistrement");
                 }else{
@@ -95,7 +95,7 @@ client.on("messageCreate", message =>{
     // obtenir le nom des victimes
     if (message.content.startsWith(prefix+'guilty')) {
 
-        fs.readFile('choco.txt','utf8',function (err, data) {
+        fs.readFile('./choco.txt','utf8',function (err, data) {
             if (err) throw err;
             console.log(data);
             message.channel.send(data);
@@ -151,15 +151,21 @@ client.on("messageCreate", message =>{
     }    
 
     if (message.content.startsWith(prefix+'save')) {
+
+        const args = message.content.split(' ');
+        if (args.length<2) {
+            message.channel.send("un problème est survenu lors de l'enregistrement");
+            return;
+        }
         // Récupérer les arguments passés à la commande
         const phrase = message.content.replace('!save','');
 
         console.log(message.content);
 
-        let path = '/save.txt';
+        let path = './save.txt';
 
         if (fs.existsSync(path)) {            
-            fs.appendFile("save.txt",phrase+"\n",(err)=>{
+            fs.appendFile(path,phrase+"\n",(err)=>{
                 if (err) {
                     message.channel.send("un problème est survenu lors de l'enregistrement");
                     return;
@@ -169,7 +175,7 @@ client.on("messageCreate", message =>{
                 }
             })        
         }else{
-            fs.writeFile(path,phrase,(err)=>{
+            fs.writeFile(path,phrase+"\n",(err)=>{
                 if (err) {
                     message.channel.send("un problème est survenu lors de l'enregistrement");
                     return;
@@ -183,8 +189,11 @@ client.on("messageCreate", message =>{
 
     if (message.content.startsWith(prefix+'read')) {
 
-        fs.readFile('save.txt','utf8',function (err, data) {
-            if (err) throw err;
+        fs.readFile('./save.txt','utf8',function (err, data) {
+            if (err){
+                message.channel.send('je n\'ai rien trouvé');
+                return;
+            };
             console.log(data);
             message.channel.send(data);
         });      
@@ -194,8 +203,11 @@ client.on("messageCreate", message =>{
         
 
 
-        fs.readFile('save.txt','utf8',function (err, data) {
-            if (err) throw err;
+        fs.readFile('./save.txt','utf8',function (err, data) {
+            if (err){
+                message.channel.send('je n\'ai rien trouvé');
+                return;
+            };
             console.log(data);
             let arraySave = data.split("\n");
             // je retire le dernier élément vu qu'il est vide
@@ -229,7 +241,118 @@ client.on("messageCreate", message =>{
                 message.channel.send(`Désolé, je n'ai pas pu récupérer la météo pour ${location}.`);
               });
         }
-      }
+    }
+    
+    
+    
+    
+    if(message.content.startsWith(prefix+'rappel')){
+        const args = message.content.split(' ');
+        if (args.length<3) {
+            message.channel.send("désolé j'ai besoin d'un préfix et d'une date au format suivant 25/02/2023 15:53:00");
+            return;
+        }else{       
+            let path = "./rappel.txt";
+            const mot = args[1];
+            const date = args.slice(2);
+            let dateString = date.join(' ');
+            
+            let dateFormat = "DD/MM/YYYY HH:mm:ss";
+            let momentDate = moment(dateString, dateFormat);
+            
+            let phrase = (`${mot} ${momentDate.format(dateFormat)}`);
+
+            if (momentDate.isValid()) {
+                if (fs.existsSync(path)) {            
+                    fs.appendFile(path,phrase + "\n",(err)=>{
+                        if (err) {
+                            message.channel.send("un problème est survenu lors de l'enregistrement");
+                        }else{
+                            // on envoie une confirmation    
+                            message.channel.send(`enregistrement suivant effectué :${phrase}`);
+                        }
+                    })
+        
+                }else{
+                    fs.writeFile(path,phrase + "\n",(err)=>{
+                        if (err) {
+                            message.channel.send("un problème est survenu lors de l'enregistrement");
+                        }else{
+                            message.channel.send(`enregistrement suivant effectué :${phrase}`);
+                        }
+                    })
+                }
+            }else{
+                message.channel.send('utiliser le format suivant pour la date(01/09/1973 15:53:00) vérifier si vous avez 28,29,30 ou 31 jours dans le mois choisi');
+            }
+
+
+
+        }
+    }
+      // fonction pour mettre un minuteur
+    function setTimer(a,b){
+        let deadline = moment(a, 'DD/MM/YYYY HH:mm:ss').valueOf();
+        console.log(deadline);
+        let now = new Date().getTime();
+        let time = deadline - now;
+        var days = Math.floor(time / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((time%(1000 * 60 * 60 * 24))/(1000 * 60 * 60));
+        var minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((time % (1000 * 60)) / 1000);
+        if (time<0) {
+            return ('le rappel est fini');
+        }else{
+            return (b +' arrive dans '+days+' jours '+hours+' heures '+minutes+' minutes '+seconds+' secondes ');
+        }
+    }
+
+
+
+      
+
+async function readRappelFile() {
+  let rappel = [];
+
+  const path = "./rappel.txt";
+
+  try {
+    const data = await fs.promises.readFile(path, "utf8");
+    rappel.push(data.split("\n"));
+
+    rappel[0].forEach(element => {
+      console.log(element);
+      let rappel = element.split(" ")[0];
+      let date = element.split(" ").slice(1).join(" ");
+      console.log(date);
+
+      if (message.content === prefix+rappel) {
+        message.channel.send(setTimer(date,rappel) + (":clock:").toString());
+    }
+
+    });
+  } catch (err) {
+    throw err;
+  }
+}
+
+readRappelFile();
+
+
+if (message.content.startsWith(prefix+'allRappel')) {
+
+    fs.readFile('./rappel.txt','utf8',function (err, data) {
+        if (err){
+            message.channel.send('je n\'ai rien trouvé');
+            return;
+        };
+        console.log(data);
+        message.channel.send(data);
+    });      
+}
+
+
+
 });
 
 // TOKEN
